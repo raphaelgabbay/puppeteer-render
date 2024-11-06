@@ -3,7 +3,7 @@ import * as puppeteer from "puppeteer";
 import { config } from "./config";
 import dotenv from "dotenv";
 import { retryWithSelector } from "./utils";
-// Add this near the top with other imports
+type SpeedDirection = "up" | "down";
 let isAutomationRunning = false;
 let automationStartTime: Date | null = null;
 
@@ -93,15 +93,19 @@ async function clickSpeedLimits(page: puppeteer.Page) {
   });
 }
 
-async function clickUnlimitedOption(page: puppeteer.Page) {
-  console.log("Clicking Unlimited option...");
+async function clickUnlimitedOption(
+  page: puppeteer.Page,
+  direction: "up" | "down"
+) {
+  console.log(`Clicking Unlimited ${direction} option...`);
+  const limitNumber = direction === "up" ? "Unlimited" : "976";
 
   await page.evaluate(() => {
     const elements = document.querySelectorAll(
       "li.dropdown__item.menu__item.is-selectable"
     );
     for (const element of elements) {
-      if (element.textContent?.trim() === "Unlimited") {
+      if (element.textContent?.trim() === limitNumber) {
         (element as HTMLElement).click();
         return;
       }
@@ -162,6 +166,17 @@ app.get("/automate", (async (req: express.Request, res: express.Response) => {
   });
 }) as express.RequestHandler);
 
+// Add this helper function
+async function toggleSpeedLimit(
+  page: puppeteer.Page,
+  direction: SpeedDirection
+) {
+  await clickSpeedLimits(page);
+  await clickUnlimitedOption(page, direction);
+  console.log(`Speed limit set to ${direction === "up" ? "Unlimited" : "976"}`);
+  await new Promise((resolve) => setTimeout(resolve, 1500));
+}
+
 // Add the background automation function
 async function runAutomation(url: string) {
   if (isAutomationRunning) return;
@@ -175,9 +190,9 @@ async function runAutomation(url: string) {
     await performLogin(page, url);
 
     while (isAutomationRunning) {
-      await clickSpeedLimits(page);
-      await clickUnlimitedOption(page);
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      for (const direction of ["up", "down"] as SpeedDirection[]) {
+        await toggleSpeedLimit(page, direction);
+      }
     }
   } catch (error) {
     console.error("Automation error:", error);
@@ -188,6 +203,7 @@ async function runAutomation(url: string) {
     await browser.close();
   }
 }
+
 // Add a stop endpoint
 app.get("/stop", (async (req: express.Request, res: express.Response) => {
   if (!isAutomationRunning) {
