@@ -17,37 +17,14 @@
  * the License.
  */
 
-'use strict';
+"use strict";
 
-import * as fse from 'fs-extra';
-import * as path from 'path';
-
-const CONFIG_PATH = path.resolve(__dirname, '../config.json');
-
-
-export type Config = {
-    datastoreCache: boolean;
-    timeout: number;
-    port: string;
-    width:number;
-    height:number;
-};
-
-export class ConfigManager {
-    public static config: Config = {
-        datastoreCache: false,
-        timeout: 10000,
-        port: '3000',
-        width: 1000,
-        height: 1000,
-    };
-
-    static async getConfiguration(): Promise<Config> {
-        // Load config.json if it exists.
-        if (fse.pathExistsSync(CONFIG_PATH)) {
-            ConfigManager.config = Object.assign(ConfigManager.config, await fse.readJson(CONFIG_PATH));
-        }
-        return ConfigManager.config;
-    }
+export interface Config {
+  port: number;
+  timeout: number;
 }
 
+export const config: Config = {
+  port: parseInt(process.env.PORT || "3000", 10),
+  timeout: parseInt(process.env.TIMEOUT || "30000", 10),
+};

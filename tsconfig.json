@@ -1,22 +1,15 @@
 {
   "compilerOptions": {
-    "target": "es2017",
+    "target": "es2020",
     "module": "commonjs",
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "pretty": true,
-    "declaration": true,
-    "sourceMap": true,
-    "lib": [
-      "es2017",
-      "esnext.asynciterable",
-      "dom"
-    ],
-    "rootDir": "./src",
-    "outDir": "./build"
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./build",
+    "rootDir": "./src"
   },
   "include": [
-    "./src/**/*.ts"
+    "src/**/*"
   ]
 }

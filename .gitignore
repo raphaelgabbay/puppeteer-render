@@ -3,3 +3,6 @@ yarn.lock
 build/
 test.jpeg
 *.tgz
+.env
+instructions.txt
+file_tree.txt
