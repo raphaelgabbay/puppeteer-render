@@ -29,8 +29,8 @@ export async function retryWithSelector(
   } = {}
 ): Promise<boolean> {
   const {
-    maxAttempts = 3,
-    delayMs = 500,
+    maxAttempts = 10,
+    delayMs = 250,
     clickAfterFound = true,
     waitForSelector,
     shouldDisappear = false,
@@ -39,7 +39,7 @@ export async function retryWithSelector(
 
   while (attempts < maxAttempts) {
     try {
-      await page.waitForSelector(selector, { timeout: 1000 });
+      await page.waitForSelector(selector, { timeout: 250 });
       if (clickAfterFound) {
         await humanLikeClick(page, selector);
         console.log(`Found and clicked ${selector}`);
@@ -48,7 +48,7 @@ export async function retryWithSelector(
           try {
             // Wait for the element to disappear
             await page.waitForSelector(selector, {
-              timeout: 1000,
+              timeout: 250,
               hidden: true, // This makes it wait for the element to disappear
             });
             return true;
@@ -61,7 +61,7 @@ export async function retryWithSelector(
 
         if (waitForSelector) {
           try {
-            await page.waitForSelector(waitForSelector, { timeout: 1000 });
+            await page.waitForSelector(waitForSelector, { timeout: 250 });
             return true;
           } catch {
             attempts++;

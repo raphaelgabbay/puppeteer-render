@@ -88,7 +88,7 @@ async function clickSpeedLimits(page: puppeteer.Page) {
   console.log("Looking for speed limits button...");
   await retryWithSelector(page, "svg.icon--limits", {
     maxAttempts: 10,
-    delayMs: 1000,
+    delayMs: 250,
     waitForSelector: ".dropdown__list",
   });
 }
@@ -184,7 +184,7 @@ async function toggleSpeedLimit(
   await clickSpeedLimits(page);
   await clickUnlimitedOption(page, direction);
   console.log(`Speed limit set to ${direction === "up" ? "Unlimited" : "976"}`);
-  await new Promise((resolve) => setTimeout(resolve, 1500));
+  await new Promise((resolve) => setTimeout(resolve, 750));
 }
 
 // Add the background automation function
