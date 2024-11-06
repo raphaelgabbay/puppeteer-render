@@ -49,8 +49,7 @@ async function setupBrowser() {
       "--disable-dev-shm-usage",
       "--disable-gpu",
     ],
-    executablePath:
-      process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/google-chrome",
+    // Removed executablePath to use Puppeteer's bundled Chrome
   });
 }
 
