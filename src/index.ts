@@ -2,7 +2,7 @@ import express from "express";
 import * as puppeteer from "puppeteer";
 import { config } from "./config";
 import dotenv from "dotenv";
-import { humanLikeClick, retryWithSelector } from "./utils";
+import { retryWithSelector } from "./utils";
 
 // Load environment variables
 dotenv.config();
@@ -42,7 +42,7 @@ app.get("/health", (req, res) => {
 // Helper Functions
 async function setupBrowser() {
   return await puppeteer.launch({
-    headless: false,
+    headless: true,
   });
 }
 
