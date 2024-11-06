@@ -88,6 +88,11 @@
       // Update status every 5 seconds
       setInterval(updateStatus, 5000);
       updateStatus(); // Initial update
+
+      // Auto-start automation when page loads
+      window.onload = function () {
+        startAutomation();
+      };
     </script>
   </body>
 </html>
