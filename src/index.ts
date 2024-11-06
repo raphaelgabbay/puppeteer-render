@@ -95,25 +95,25 @@ async function clickSpeedLimits(page: puppeteer.Page) {
 
 async function clickUnlimitedOption(
   page: puppeteer.Page,
-  direction: "up" | "down"
+  direction: SpeedDirection
 ) {
   console.log(`Clicking Unlimited ${direction} option...`);
   const limitNumber = direction === "up" ? "Unlimited" : "976";
 
-  await page.evaluate(() => {
+  await page.evaluate((targetText) => {
     const elements = document.querySelectorAll(
       "li.dropdown__item.menu__item.is-selectable"
     );
     for (const element of elements) {
-      if (element.textContent?.trim() === limitNumber) {
+      if (element.textContent?.trim() === targetText) {
         (element as HTMLElement).click();
         return;
       }
     }
-    throw new Error("Could not find Unlimited option");
-  });
+    throw new Error(`Could not find ${targetText} option`);
+  }, limitNumber);
 
-  console.log("Clicked Unlimited option");
+  console.log(`Clicked ${limitNumber} option`);
 }
 
 // Add a new status endpoint
