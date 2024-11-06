@@ -3,13 +3,16 @@ import * as puppeteer from "puppeteer";
 import { config } from "./config";
 import dotenv from "dotenv";
 import { retryWithSelector } from "./utils";
+// Add this near the top with other imports
+let isAutomationRunning = false;
+let automationStartTime: Date | null = null;
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
 app.use(express.json());
-
+app.use(express.static("public"));
 // Add error handling middleware
 app.use(
   (
@@ -109,39 +112,94 @@ async function clickUnlimitedOption(page: puppeteer.Page) {
   console.log("Clicked Unlimited option");
 }
 
+// Add a new status endpoint
+app.get("/status", (req, res) => {
+  if (isAutomationRunning) {
+    const uptime = automationStartTime
+      ? Math.floor(
+          (new Date().getTime() - automationStartTime.getTime()) / 1000
+        )
+      : 0;
+    res.json({
+      status: "running",
+      uptime: `${uptime} seconds`,
+      startedAt: automationStartTime?.toISOString(),
+    });
+  } else {
+    res.json({ status: "stopped" });
+  }
+});
+
 // Main automation handler
 app.get("/automate", (async (req: express.Request, res: express.Response) => {
   console.log("Automation requested via GET");
-  const url = process.env.FLOOD_LINK;
 
+  if (isAutomationRunning) {
+    return res.json({
+      message: "Automation is already running",
+      status: "running",
+    });
+  }
+
+  const url = process.env.FLOOD_LINK;
   if (!url || !isValidUrl(url)) {
     console.error("Invalid URL:", url);
     return res.status(400).json({ error: "Invalid URL configuration" });
   }
 
+  // Start automation in background
+  runAutomation(url).catch((error) => {
+    console.error("Automation error:", error);
+    isAutomationRunning = false;
+    automationStartTime = null;
+  });
+
+  // Immediately return response
+  res.json({
+    success: true,
+    message: "Automation started successfully",
+    status: "running",
+  });
+}) as express.RequestHandler);
+
+// Add the background automation function
+async function runAutomation(url: string) {
+  if (isAutomationRunning) return;
+
+  isAutomationRunning = true;
+  automationStartTime = new Date();
   const browser = await setupBrowser();
 
   try {
     const page = await browser.newPage();
     await performLogin(page, url);
 
-    while (true) {
+    while (isAutomationRunning) {
       await clickSpeedLimits(page);
       await clickUnlimitedOption(page);
-      await new Promise((resolve) => setTimeout(resolve, 5000)); // 5 seconds timeout
+      await new Promise((resolve) => setTimeout(resolve, 5000));
     }
-
-    res.json({
-      success: true,
-      message: "Automation completed successfully",
-    });
   } catch (error) {
     console.error("Automation error:", error);
-    res.status(500).json({ error: "Automation failed" });
+    throw error;
   } finally {
-    //await browser.close();
+    isAutomationRunning = false;
+    automationStartTime = null;
+    await browser.close();
   }
+}
+// Add a stop endpoint
+app.get("/stop", (async (req: express.Request, res: express.Response) => {
+  if (!isAutomationRunning) {
+    return res.json({ message: "Automation is not running" });
+  }
+
+  isAutomationRunning = false;
+  res.json({ message: "Stopping automation..." });
 }) as express.RequestHandler);
+
+// Add this near the top with other middleware
+app.use(express.static("public"));
 
 // Start the server
 const server = app.listen(config.port, () => {

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Flood Automation Status</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .status {
+        padding: 20px;
+        border-radius: 5px;
+        margin: 20px 0;
+      }
+      .running {
+        background-color: #d4edda;
+        color: #155724;
+      }
+      .stopped {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+      button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-right: 10px;
+      }
+      .start {
+        background-color: #28a745;
+        color: white;
+      }
+      .stop {
+        background-color: #dc3545;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Flood Automation Status</h1>
+    <div id="status" class="status"></div>
+    <button onclick="startAutomation()" class="start">Start Automation</button>
+    <button onclick="stopAutomation()" class="stop">Stop Automation</button>
+
+    <script>
+      function updateStatus() {
+        fetch("/status")
+          .then((response) => response.json())
+          .then((data) => {
+            const statusDiv = document.getElementById("status");
+            if (data.status === "running") {
+              statusDiv.className = "status running";
+              statusDiv.innerHTML = `
+                            Status: Running<br>
+                            Uptime: ${data.uptime}<br>
+                            Started: ${new Date(
+                              data.startedAt
+                            ).toLocaleString()}
+                        `;
+            } else {
+              statusDiv.className = "status stopped";
+              statusDiv.textContent = "Status: Stopped";
+            }
+          });
+      }
+
+      function startAutomation() {
+        fetch("/automate")
+          .then((response) => response.json())
+          .then((data) => {
+            console.log(data);
+            updateStatus();
+          });
+      }
+
+      function stopAutomation() {
+        fetch("/stop")
+          .then((response) => response.json())
+          .then((data) => {
+            console.log(data);
+            updateStatus();
+          });
+      }
+
+      // Update status every 5 seconds
+      setInterval(updateStatus, 5000);
+      updateStatus(); // Initial update
+    </script>
+  </body>
+</html>
