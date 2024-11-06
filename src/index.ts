@@ -41,16 +41,28 @@ app.get("/health", (req, res) => {
 
 // Helper Functions
 async function setupBrowser() {
-  return await puppeteer.launch({
-    headless: true,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-gpu",
-    ],
-    // Removed executablePath to use Puppeteer's bundled Chrome
-  });
+  console.log("Chrome executable path:", process.env.PUPPETEER_EXECUTABLE_PATH);
+  try {
+    return await puppeteer.launch({
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--disable-software-rasterizer",
+        "--disable-dev-tools",
+        "--no-first-run",
+        "--no-zygote",
+        "--single-process",
+      ],
+      executablePath:
+        process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/google-chrome",
+    });
+  } catch (error) {
+    console.error("Failed to launch browser:", error);
+    throw error;
+  }
 }
 
 async function performLogin(page: puppeteer.Page, url: string) {
