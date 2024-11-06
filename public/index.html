@@ -37,29 +37,143 @@
         background-color: #dc3545;
         color: white;
       }
+      .toggle-container {
+        margin: 20px 0;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+      }
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        margin: 10px 0;
+      }
+      .toggle-row label {
+        margin-left: 10px;
+      }
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+      }
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.4s;
+        border-radius: 34px;
+      }
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: 0.4s;
+        border-radius: 50%;
+      }
+      input:checked + .slider {
+        background-color: #2196f3;
+      }
+      input:checked + .slider:before {
+        transform: translateX(26px);
+      }
     </style>
   </head>
   <body>
     <h1>Flood Automation Status</h1>
     <div id="status" class="status"></div>
+
+    <div class="toggle-container">
+      <h3>Speed Limit Controls</h3>
+      <div class="toggle-row">
+        <label class="switch">
+          <input type="checkbox" id="toggleUp" checked />
+          <span class="slider"></span>
+        </label>
+        <label>Upload Speed (Unlimited)</label>
+      </div>
+      <div class="toggle-row">
+        <label class="switch">
+          <input type="checkbox" id="toggleDown" checked />
+          <span class="slider"></span>
+        </label>
+        <label>Download Speed (976 MB/s)</label>
+      </div>
+    </div>
+
     <button onclick="startAutomation()" class="start">Start Automation</button>
     <button onclick="stopAutomation()" class="stop">Stop Automation</button>
 
     <script>
+      let activeDirections = {
+        up: true,
+        down: true,
+      };
+
+      document
+        .getElementById("toggleUp")
+        .addEventListener("change", function (e) {
+          activeDirections.up = e.target.checked;
+          if (isRunning) {
+            updateAutomationSettings();
+          }
+        });
+
+      document
+        .getElementById("toggleDown")
+        .addEventListener("change", function (e) {
+          activeDirections.down = e.target.checked;
+          if (isRunning) {
+            updateAutomationSettings();
+          }
+        });
+
+      let isRunning = false;
+
+      function updateAutomationSettings() {
+        fetch("/settings", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(activeDirections),
+        })
+          .then((response) => response.json())
+          .then((data) => console.log("Settings updated:", data));
+      }
+
       function updateStatus() {
         fetch("/status")
           .then((response) => response.json())
           .then((data) => {
+            isRunning = data.status === "running";
             const statusDiv = document.getElementById("status");
-            if (data.status === "running") {
+            if (isRunning) {
               statusDiv.className = "status running";
               statusDiv.innerHTML = `
-                            Status: Running<br>
-                            Uptime: ${data.uptime}<br>
-                            Started: ${new Date(
-                              data.startedAt
-                            ).toLocaleString()}
-                        `;
+                Status: Running<br>
+                Uptime: ${data.uptime}<br>
+                Started: ${new Date(data.startedAt).toLocaleString()}<br>
+                Active Directions: ${
+                  Object.entries(data.activeDirections || {})
+                    .filter(([_, active]) => active)
+                    .map(([dir]) => dir.toUpperCase())
+                    .join(", ") || "None"
+                }
+              `;
             } else {
               statusDiv.className = "status stopped";
               statusDiv.textContent = "Status: Stopped";
@@ -68,7 +182,13 @@
       }
 
       function startAutomation() {
-        fetch("/automate")
+        fetch("/automate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(activeDirections),
+        })
           .then((response) => response.json())
           .then((data) => {
             console.log(data);

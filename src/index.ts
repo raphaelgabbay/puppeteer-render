@@ -3,9 +3,22 @@ import * as puppeteer from "puppeteer";
 import { config } from "./config";
 import dotenv from "dotenv";
 import { retryWithSelector } from "./utils";
+
 type SpeedDirection = "up" | "down";
+
+// Add the interface definition
+interface AutomationSettings {
+  up: boolean;
+  down: boolean;
+}
+
+// Add state variables
 let isAutomationRunning = false;
 let automationStartTime: Date | null = null;
+let activeDirections: AutomationSettings = {
+  up: true,
+  down: true,
+};
 
 // Load environment variables
 dotenv.config();
@@ -138,15 +151,23 @@ app.get("/status", (req, res) => {
       status: "running",
       uptime: `${uptime} seconds`,
       startedAt: automationStartTime?.toISOString(),
+      activeDirections,
     });
   } else {
     res.json({ status: "stopped" });
   }
 });
 
+// Add settings endpoint
+app.post("/settings", (async (req: express.Request, res: express.Response) => {
+  const newSettings = req.body as AutomationSettings;
+  activeDirections = newSettings;
+  res.json({ success: true, activeDirections });
+}) as express.RequestHandler);
+
 // Main automation handler
-app.get("/automate", (async (req: express.Request, res: express.Response) => {
-  console.log("Automation requested via GET");
+app.post("/automate", (async (req: express.Request, res: express.Response) => {
+  console.log("Automation requested via POST");
 
   if (isAutomationRunning) {
     return res.json({
@@ -161,6 +182,8 @@ app.get("/automate", (async (req: express.Request, res: express.Response) => {
     return res.status(400).json({ error: "Invalid URL configuration" });
   }
 
+  activeDirections = req.body as AutomationSettings;
+
   // Start automation in background
   runAutomation(url).catch((error) => {
     console.error("Automation error:", error);
@@ -168,11 +191,11 @@ app.get("/automate", (async (req: express.Request, res: express.Response) => {
     automationStartTime = null;
   });
 
-  // Immediately return response
   res.json({
     success: true,
     message: "Automation started successfully",
     status: "running",
+    activeDirections,
   });
 }) as express.RequestHandler);
 
@@ -200,7 +223,16 @@ async function runAutomation(url: string) {
     await performLogin(page, url);
 
     while (isAutomationRunning) {
-      for (const direction of ["up", "down"] as SpeedDirection[]) {
+      const directions = (["up", "down"] as SpeedDirection[]).filter(
+        (dir) => activeDirections[dir]
+      );
+
+      if (directions.length === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        continue;
+      }
+
+      for (const direction of directions) {
         await toggleSpeedLimit(page, direction);
       }
     }
